@@ -19,5 +19,7 @@
       "src": "/.*",
       "dest": "index.py"
     }
-  ]
+  ],
+  "memory": 1024,
+  "pythonVersion": "3.9"
 }
