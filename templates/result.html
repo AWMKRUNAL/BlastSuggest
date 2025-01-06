@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>BlastGUIDE Results</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@900&display=swap');
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4; /* Light grey background */
+            color: #333; /* Dark text color */
+        }
+        .container {
+            width: 80%; /* Retain the larger width */
+            margin: 50px auto;
+            padding: 30px; /* Adding more padding for a comfortable layout */
+            background: #fff; /* White background */
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+        }
+        header {
+            background: #131212; /* Dark background */
+            color: #fff;
+            padding: 20px 0;
+            border-bottom: #f57c00 3px solid; /* Darker orange accent color */
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+            position: relative;
+        }
+        header img {
+            height: 50px;
+            margin-left: 20px;
+            vertical-align: middle;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 20px;
+        }
+        header h1 {
+            font-size: 2.5em;
+            margin: 0;
+            display: inline-block;
+        }
+        .title-blast {
+            font-family: 'Orbitron', sans-serif;
+            color: #ff690c; /* Yellow color */
+        }
+        .title-gen {
+            font-family: 'Roboto', sans-serif;
+            color: #ffffff;
+        }
+        h2 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #eeeeee; /* Light grey border */
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+        }
+        th {
+            background-color: #ff620b; /* Orange accent color */
+            color: #ffffff; /* White text */
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px auto;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1); /* Subtle shadow on images */
+        }
+        footer {
+            background: #131212;
+            color: #ff690c;
+            text-align: center;
+            padding: 10px 0;
+            margin-top: 20px;
+            border-radius: 0 0 10px 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="https://companieslogo.com/img/orig/ADANIPOWER.NS-1427c780.png?download-true.png" alt="Adani Logo">
+        <h1><span class="title-blast">Blast</span><span class="title-gen">GUIDE</span></h1>
+    </header>
+    <div class="container">
+        <div>
+            <h2>Suggestions Table</h2>
+            <table>
+                {{ table_html|safe }}
+            </table>
+        </div>
+        <div>
+            <h2>Combined Pattern (3D Blast Pattern)</h2>
+            <!-- Embed the Plotly HTML for the 3D blast pattern -->
+            {{ combined_pattern_img_html|safe }}
+        </div>
+        <div>
+            <h2>Single Blast Hole Diagram</h2>
+            <img src="data:image/png;base64,{{ single_diagram_img }}" alt="Single Blast Hole Diagram">
+        </div>
+        <div>
+            <h2>Blasting Pattern Explosion</h2>
+            <!-- Embed the animation HTML -->
+            {{ animation_html|safe }}
+        </div>
+    </div>
+    <footer>
+        Krunal Chulbulkar @ Technology Department
+    </footer>
+</body>
+</html>

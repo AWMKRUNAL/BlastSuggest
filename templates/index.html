@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>BlastGUIDE</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@900&display=swap');
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4; /* Light grey background */
+            color: #333; /* Dark text color */
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff; /* White background */
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+        }
+        header {
+            background: #131212; /* Dark background */
+            color: #fff;
+            padding: 20px 0;
+            border-bottom: #f57c00 3px solid; /* Darker orange accent color */
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+            position: relative;
+        }
+        header img {
+            height: 50px;
+            margin-left: 20px;
+            vertical-align: middle;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 20px;
+        }
+        header h1 {
+            font-size: 2.5em;
+            margin: 0;
+            display: inline-block;
+        }
+        .title-blast {
+            font-family: 'Orbitron', sans-serif;
+            color: #ff690c; /* Yellow color */
+        }
+        .title-gen {
+            font-family: 'Roboto', sans-serif;
+            color: #ffffff;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+        label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .generate-button {
+            background-color: #ff620b; /* Orange button */
+            color: #ffffff; /* White text */
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+        .generate-button:hover {
+            background-color: #f57c00; /* Darker orange on hover */
+        }
+        footer {
+            background: #131212;
+            color: #ff690c;
+            text-align: center;
+            padding: 10px 0;
+            margin-top: 20px;
+            border-radius: 0 0 10px 10px;
+        }
+    </style>
+    <script>
+        function toggleImageUpload() {
+            const imageUploadSection = document.getElementById('image-upload-section');
+            const imageUploadChoice = document.getElementById('image_upload_choice').value;
+            if (imageUploadChoice === 'yes') {
+                imageUploadSection.style.display = 'block';
+            } else {
+                imageUploadSection.style.display = 'none';
+            }
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <img src="https://companieslogo.com/img/orig/ADANIPOWER.NS-1427c780.png?download-true.png" alt="Adani Logo">
+        <h1><span class="title-blast">Blast</span><span class="title-gen">GUIDE</span></h1>
+    </header>
+    <div class="container">
+        <form action="{{ url_for('result') }}" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="bench_height">Bench Height:</label>
+                <input type="number" step="0.01" id="bench_height" name="bench_height" required>
+            </div>
+            <div class="form-group">
+                <label for="rock_density">Rock Density:</label>
+                <input type="number" step="0.01" id="rock_density" name="rock_density" required>
+            </div>
+            <div class="form-group">
+                <label for="explosive_density">Explosive Density:</label>
+                <input type="number" step="0.01" id="explosive_density" name="explosive_density" required>
+            </div>
+            <div class="form-group">
+                <label for="length">Length of Patch:</label>
+                <input type="number" step="0.01" id="length" name="length" required>
+            </div>
+            <div class="form-group">
+                <label for="width">Width of Patch:</label>
+                <input type="number" step="0.01" id="width" name="width" required>
+            </div>
+            <div class="form-group">
+                <label for="hole_diameter">Hole Diameter:</label>
+                <input type="number" step="0.01" id="hole_diameter" name="hole_diameter" required>
+            </div>
+            <div class="form-group">
+                <label for="powder_factor">Powder Factor:</label>
+                <input type="number" step="0.01" id="powder_factor" name="powder_factor" required>
+            </div>
+            <div class="form-group">
+                <label for="bedding_condition">Bedding Condition:</label>
+                <select id="bedding_condition" name="bedding_condition" required>
+                    <option value="bedding steeply dipping into cut">Bedding steeply dipping into cut</option>
+                    <option value="bedding steeply dipping into face">Bedding steeply dipping into face</option>
+                    <option value="other cases of deposition">Other cases of deposition</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="rock_condition">Rock Condition:</label>
+                <select id="rock_condition" name="rock_condition" required>
+                    <option value="heavily cracked, frequent weak joints, weakly cemented layers">Heavily cracked, frequent weak joints, weakly cemented layers</option>
+                    <option value="thin well cemented layers with tight joints">Thin, well-cemented layers with tight joints</option>
+                    <option value="massive intact rock">Massive intact rock</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="image_upload_choice">Do you want to upload an image?</label>
+                <select id="image_upload_choice" name="image_upload_choice" onchange="toggleImageUpload()">
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                </select>
+            </div>
+            <div class="form-group" id="image-upload-section" style="display: none;">
+                <label for="blast_photo">Upload Blasting Patch Photo:</label>
+                <input type="file" id="blast_photo" name="blast_photo" accept="image/*">
+            </div>
+            <button type="submit" class="generate-button">Generate Report</button>
+        </form>
+    </div>
+    <footer>
+        Krunal Chulbulkar @ Technology Department
+    </footer>
+</body>
+</html>
