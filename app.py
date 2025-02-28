@@ -429,22 +429,76 @@ def plot_blasting_pattern(positions, burden, spacing, num_rows, connection_type,
     return fig, ax, scatter, delays
 
 
-def create_animation(fig, ax, scatter, delays):
-    def animate(frame):
-        scatter.set_color(['red' if frame >= delay else 'blue' for delay in delays])
-        sizes = [400 if frame >= delay else 100 for delay in delays]
-        shapes = ['*' if frame >= delay else 'o' for delay in delays]
+def create_animation_plotly(positions, delays, spacing, burden):
+    """
+    Use Plotly to animate the blasting pattern.
 
-        scatter.set_sizes(sizes)
-        paths = [plt.matplotlib.markers.MarkerStyle(shape).get_path().transformed(
-            plt.matplotlib.markers.MarkerStyle(shape).get_transform()) for shape in shapes]
-        scatter.set_paths(paths)
-        if frame == max(delays):
-            scatter.set_color('red')
+    Args:
+        positions: List of tuples containing x, y positions of holes.
+        delays: List of delays for each hole.
+        spacing: Spacing between holes.
+        burden: Burden for the row.
+    Returns:
+        A Plotly figure object with animation.
+    """
 
-    anim = FuncAnimation(fig, animate, frames=int(max(delays)) + 10, interval=100)
-    plt.close()
-    return anim
+    # Specify grid dimensions for aesthetic display
+    x, y = zip(*positions)
+    max_x = max(x) + spacing
+    max_y = max(y) + burden
+    delay_frames = max(delays) + 10
+
+    # Create color and size mappings for animation
+    frames = []
+    for frame in range(delay_frames):
+        frame_data = go.Scatter(
+            x=x,
+            y=y,
+            mode="markers",
+            marker=dict(
+                size=[40 if frame >= delay else 20 for delay in delays],
+                color=['red' if frame >= delay else 'blue' for delay in delays],
+                symbol=['circle' if frame >= delay else 'circle' for delay in delays]
+            ),
+        )
+        frames.append(go.Frame(data=[frame_data], name=f"frame_{frame}"))
+
+    # Add initial frame
+    scatter_init = go.Scatter(
+        x=x,
+        y=y,
+        mode="markers",
+        marker=dict(size=[20] * len(positions), color="blue", symbol="square")
+    )
+
+    # Build the figure
+    fig = go.Figure(
+        data=[scatter_init],
+        layout=go.Layout(
+            xaxis=dict(range=[-spacing / 2, max_x]),
+            yaxis=dict(range=[-burden / 2, max_y]),
+            updatemenus=[
+                dict(
+                    type="buttons",
+                    showactive=False,
+                    buttons=[
+                        dict(label="Play", method="animate", args=[None, {"fromcurrent": True}]),
+                        dict(label="Pause", method="animate",
+                             args=[[None], {"frame": {"duration": 0, "redraw": False}}])
+                    ],
+                )
+            ],
+        ),
+        frames=frames,
+    )
+
+    # Set animation configuration
+    fig.update_layout(
+        autosize=True,
+        margin=dict(l=20, r=20, t=40, b=20),
+    )
+
+    return fig
 
 
 def draw_combined_pattern(length, width, spacing, burden, bench_height, pattern_type, hole_details):
@@ -734,7 +788,12 @@ def result():
             )
 
             # Create animation
-            animation_html = create_animation(fig, ax, scatter, delays).to_jshtml()
+            animation_html = create_animation_plotly(
+                positions=positions,
+                delays=delays,
+                spacing=params_budgeted["spacing"],
+                burden=params_budgeted["burden"]
+            ).to_html(full_html=False)
 
             return render_template('result.html', table_html=table_html,
                                    combined_pattern_img_html=combined_pattern_img_html,
