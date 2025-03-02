@@ -1,14 +1,9 @@
 import base64
-
 import matplotlib
-import numpy as np
-import plotly.graph_objects as go
 from flask import Flask, render_template, request
 from tabulate import tabulate
-
 matplotlib.rcParams['animation.embed_limit'] = 2**128
 app = Flask(__name__)
-
 
 def calculate_blasting_parameters(user_inputs):
     bench_height = user_inputs["bench_height"]
@@ -256,33 +251,33 @@ def suggest_improvements(user_inputs):
 
 
 def generate_blasting_pattern(user_inputs, spacing, burden, total_holes):
+    """
+    Optimize the blasting pattern generation by limiting grid size.
+    """
     rock_density = user_inputs["rock_density"]
     width = user_inputs["width"]
     length = user_inputs["length"]
 
-    # Determine pattern type based on rock density
-    if rock_density < 2.2:
-        pattern_type = 'square'
-    else:
-        pattern_type = 'staggered'
+    max_holes = 500  # Define a max limit for total holes
+
+    # Adjust grid positions if holes exceed max limit
+    rows = int(length / spacing)
+    cols = int(width / burden)
+    if total_holes > max_holes:
+        rows = rows // 2
+        cols = cols // 2
 
     positions = []
-    # Calculate the number of rows based on width and burden
-    cols = int(length /spacing)
+    for row in range(rows):
+        for col in range(cols):
+            if rock_density < 2.2:  # Square pattern
+                positions.append((col * spacing, row * burden))
+            else:  # Staggered pattern
+                x_offset = col * spacing + (spacing / 2 if row % 2 == 1 else 0)
+                positions.append((x_offset, row * burden))
 
-    # Calculate the number of columns
-    num_rows = total_holes // cols
-    burden = int(burden)
-    spacing = int(spacing)
-    for i in range(num_rows):
-        for j in range(cols):
-            if pattern_type == 'square':
-                positions.append((j * spacing, i * burden))
-            else:  # staggered
-                x_offset = j * spacing + (spacing / 2 if i % 2 == 1 else 0)
-                positions.append((x_offset, i * burden))
+    return positions, rows
 
-    return positions, num_rows
 
 
 from matplotlib.animation import FuncAnimation
@@ -429,28 +424,24 @@ def plot_blasting_pattern(positions, burden, spacing, num_rows, connection_type,
     return fig, ax, scatter, delays
 
 
+import plotly.graph_objects as go
+import numpy as np
+
+
 def create_animation_plotly(positions, delays, spacing, burden):
     """
-    Use Plotly to animate the blasting pattern.
-
-    Args:
-        positions: List of tuples containing x, y positions of holes.
-        delays: List of delays for each hole.
-        spacing: Spacing between holes.
-        burden: Burden for the row.
-    Returns:
-        A Plotly figure object with animation.
+    Optimized Plotly animation function to reduce frames for large datasets.
     """
 
-    # Specify grid dimensions for aesthetic display
     x, y = zip(*positions)
     max_x = max(x) + spacing
     max_y = max(y) + burden
+    unique_delays = sorted(set(delays))  # Only include significant frames
     delay_frames = max(delays) + 10
 
-    # Create color and size mappings for animation
+    # Create frames for significant changes only
     frames = []
-    for frame in range(delay_frames):
+    for frame in unique_delays:  # Use unique delays to reduce frames
         frame_data = go.Scatter(
             x=x,
             y=y,
@@ -463,7 +454,6 @@ def create_animation_plotly(positions, delays, spacing, burden):
         )
         frames.append(go.Frame(data=[frame_data], name=f"frame_{frame}"))
 
-    # Add initial frame
     scatter_init = go.Scatter(
         x=x,
         y=y,
@@ -471,7 +461,6 @@ def create_animation_plotly(positions, delays, spacing, burden):
         marker=dict(size=[20] * len(positions), color="blue", symbol="square")
     )
 
-    # Build the figure
     fig = go.Figure(
         data=[scatter_init],
         layout=go.Layout(
@@ -492,7 +481,6 @@ def create_animation_plotly(positions, delays, spacing, burden):
         frames=frames,
     )
 
-    # Set animation configuration
     fig.update_layout(
         autosize=True,
         margin=dict(l=20, r=20, t=40, b=20),
@@ -501,22 +489,27 @@ def create_animation_plotly(positions, delays, spacing, burden):
     return fig
 
 
-def draw_combined_pattern(length, width, spacing, burden, bench_height, pattern_type, hole_details):
-    required_keys = ["charge_height", "stemming_distance", "hole_depth"]
-    for key in required_keys:
-        if key not in hole_details:
-            raise KeyError(f"Required key '{key}' is missing in hole_details")
 
-    charge_height = hole_details["charge_height"]
-    stemming_distance = hole_details["stemming_distance"]
-    depth_hole = hole_details["hole_depth"]
+def draw_combined_pattern(length, width, spacing, burden, bench_height, pattern_type, hole_details):
+    """
+    Reduce hole density for large grids to optimize performance.
+    """
+    max_points = 500  # Limit the number of grid points
+    x_positions = np.arange(0, length, spacing)
+    y_positions = np.arange(0, width, burden)
+
+    if len(x_positions) * len(y_positions) > max_points:
+        x_positions = x_positions[::2]  # Reduce density by skipping points
+        y_positions = y_positions[::2]
 
     fig = go.Figure()
 
-    add_holes(fig, length, width, spacing, burden, charge_height, stemming_distance, depth_hole, pattern_type)
+    # Add combined holes and the surface pattern
+    add_holes(fig, length, width, spacing, burden, hole_details["charge_height"],
+              hole_details["stemming_distance"], hole_details["hole_depth"], pattern_type)
 
-    x_grid, y_grid = np.meshgrid(np.arange(-5, length + spacing, spacing), np.arange(0, width, burden))
-    z_grid = np.full_like(x_grid, depth_hole, dtype=float)
+    x_grid, y_grid = np.meshgrid(x_positions, y_positions)
+    z_grid = np.full_like(x_grid, hole_details["hole_depth"], dtype=float)
 
     fig.add_trace(
         go.Surface(
@@ -533,14 +526,11 @@ def draw_combined_pattern(length, width, spacing, burden, bench_height, pattern_
         scene=dict(
             xaxis=dict(title='Length (m)'),
             yaxis=dict(title='Width (m)'),
-            zaxis=dict(title='Depth (m)', range=[0, depth_hole + 0.5]),
+            zaxis=dict(title='Depth (m)', range=[0, hole_details["hole_depth"] + 0.5]),
         )
     )
 
-    # Save figure to HTML
-    img_html = fig.to_html(full_html=False)
-
-    return img_html
+    return fig.to_html(full_html=False)
 
 
 
@@ -670,6 +660,13 @@ def result():
                 "powder_factor": float(request.form["powder_factor"]),
             }
 
+            # Input validation
+            if user_input["length"] > 1000 or user_input["width"] > 1000:
+                return "<h1>Error: Length and Width values are too large. Please reduce the dimensions.</h1>"
+
+            if user_input["hole_diameter"] < 1 or user_input["hole_diameter"] > 1000:
+                return "<h1>Error: Invalid Hole Diameter. Please provide a valid range (1-1000 mm).</h1>"
+
             # Parameter names mapping
             parameter_names = {
                 "bench_height": "Bench Height (m)",
@@ -788,6 +785,7 @@ def result():
             )
 
             # Create animation
+            # Generate animation using Plotly
             animation_html = create_animation_plotly(
                 positions=positions,
                 delays=delays,
