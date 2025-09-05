@@ -65,7 +65,8 @@ def calculate_blasting_parameters(user_inputs):
 
     stemming_distance = 0.7 * burden
     subdrill = 0.3 * burden
-    depth_hole = subdrill + bench_height
+    #depth_hole = subdrill + bench_height
+    depth_hole = bench_height
     #num_holes_length = int(length / spacing)
     #num_holes_width = int(width / burden)
     #total_holes = num_holes_length * num_holes_width
@@ -192,7 +193,8 @@ def suggest_improvements(user_inputs):
     #average_spacing = (Spacing1 + spacing2) / 2
     average_spacing = 1.35 * average_burden
     subdrill = 0.3 * average_burden
-    hole_depth = subdrill + bench_height
+    hole_depth = bench_height
+    #hole_depth = subdrill + bench_height
     #num_holes_length = int(length / average_spacing)
     #num_holes_width = int(width / average_burden)
     x_positions = np.arange(0, length, average_spacing)
@@ -806,3 +808,4 @@ def result():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
