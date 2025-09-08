@@ -12,7 +12,6 @@ def calculate_blasting_parameters(user_inputs):
     length = user_inputs["length"]
     width = user_inputs["width"]
     hole_diameter = user_inputs["hole_diameter"]
-    distance = user_inputs["distance"]
     bedding_condition = user_inputs["bedding_condition"]
     rock_condition = user_inputs["rock_condition"]
     powder_factor = user_inputs["powder_factor"]
@@ -85,8 +84,6 @@ def calculate_blasting_parameters(user_inputs):
     charge_height = round(explosive_quantity_per_hole / (explosive_density_kg_m3 * (hole_diameter / 1000) ** 2 * 3.14159 / 4), 2)
     stemming_distance_final = round(depth_hole - charge_height, 2)
     mean_fragmentation_size = round(8 * (burden * spacing * bench_height / explosive_quantity_per_hole) ** 0.8 * explosive_quantity_per_hole ** 0.167,2)
-    scaled_distance = distance / (explosive_quantity_per_hole**0.5)
-    ppv = 9907.03 * (scaled_distance ** -2.12)
 
     parameters_budgeted_pf = {
         "burden": burden,
@@ -102,7 +99,6 @@ def calculate_blasting_parameters(user_inputs):
         "booster_quantity": total_booster_quantity,
         "total_explosive": total_explosive_quantity,
         "mean_fragmentation_size": mean_fragmentation_size,
-	"ppv" : ppv,
         "powder_factor": powder_factor
     }
     return parameters_budgeted_pf
@@ -115,7 +111,6 @@ def suggest_improvements(user_inputs):
     explosive_density = user_inputs["explosive_density"]
     length = user_inputs["length"]
     width = user_inputs["width"]
-    distance = user_inputs["distance"]
     hole_diameter = user_inputs["hole_diameter"]
     bedding_condition = user_inputs["bedding_condition"]
     rock_condition = user_inputs["rock_condition"]
@@ -217,8 +212,6 @@ def suggest_improvements(user_inputs):
     charge_height = explosive_per_hole / ((explosive_density * 1000) * (hole_diameter / 1000) ** 2 * 3.14159 / 4)
     stemming_distance = hole_depth - charge_height
     mean_fragmentation_size = 8 * (average_burden * average_spacing * bench_height / explosive_per_hole) ** 0.8 * explosive_per_hole ** 0.167
-    scaled_distance = distance / (explosive_per_hole**0.5)
-    ppv = 9907.03 * (scaled_distance ** -2.12)
 
     range_factor = 0.15
     ranges = {
@@ -235,7 +228,6 @@ def suggest_improvements(user_inputs):
         "booster_quantity": (total_booster_quantity * (1 - range_factor), total_booster_quantity * (1 + range_factor)),
         "total_explosives": (total_explosive_quantity * (1 - range_factor), total_explosive_quantity * (1 + range_factor)),
         "mean_fragmentation_size": (mean_fragmentation_size * (1 - range_factor), mean_fragmentation_size * (1 + range_factor)),
-	"ppv" : (ppv * (1 - range_factor), ppv * (1 + range_factor)),
         "powder_factor": (powder_factor * (1 - range_factor), powder_factor * (1 + range_factor))
     }
 
@@ -255,7 +247,6 @@ def suggest_improvements(user_inputs):
         "total_explosives": total_explosive_quantity,
         "booster_quantity": total_booster_quantity,
         "mean_fragmentation_size": mean_fragmentation_size,
-	"ppv" : ppv,
         "powder_factor": powder_factor,
         "ranges": ranges
     }
@@ -817,4 +808,3 @@ def result():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
