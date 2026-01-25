@@ -59,26 +59,7 @@ def calculate_blasting_parameters(user_inputs):
     else:
         raise ValueError("Invalid Rock Condition Value")'''
     
-     '''if rock_type == "Coal":
-        rock_density = (1.37 + 1.41)/2
-    elif rock_type == "Shaly Coal":
-        rock_density = 1.76
-    elif rock_type == "Carb Shale":
-        rock_density = (1.89 + 2.07)/2
-    elif rock_type == "Shale":
-        rock_density = (2.15+2.26)/2
-    elif rock_type == "Sandy Shale":
-        rock_density = (2.34+2.29)/2
-    elif rock_type == "Coarse Grained SST":
-        rock_density = (2.26+2.24)/2
-    elif rock_type == "Med. Grained SST":
-        rock_density = (2.30+2.26)/2
-    elif rock_type == "Fine Grained SST":
-        rock_density = (2.35+2.28)/2
-    elif rock_type == "Calcareous":
-        rock_density = 2.30
-    else:
-        raise ValueError("Invalid Rock Condition Value")'''
+  
 
     if rock_density <= 1.8:
         B1 = 40 * (hole_diameter / 1000)
@@ -207,26 +188,7 @@ def suggest_improvements(user_inputs):
         raise ValueError("Invalid Rock Condition Value")'''
 
     
-    '''if rock_type == "Coal":
-        rock_density = (1.37 + 1.41)/2
-    elif rock_type == "Shaly Coal":
-        rock_density = 1.76
-    elif rock_type == "Carb Shale":
-        rock_density = (1.89 + 2.07)/2
-    elif rock_type == "Shale":
-        rock_density = (2.15+2.26)/2
-    elif rock_type == "Sandy Shale":
-        rock_density = (2.34+2.29)/2
-    elif rock_type == "Coarse Grained SST":
-        rock_density = (2.26+2.24)/2
-    elif rock_type == "Med. Grained SST":
-        rock_density = (2.30+2.26)/2
-    elif rock_type == "Fine Grained SST":
-        rock_density = (2.35+2.28)/2
-    elif rock_type == "Calcareous":
-        rock_density = 2.30
-    else:
-        raise ValueError("Invalid Rock Condition Value")'''
+
 
     if rock_density <= 1.8:
         Burden2 = 40 * (hole_diameter / 1000)
@@ -883,6 +845,7 @@ def result():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
