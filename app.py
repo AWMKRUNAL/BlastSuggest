@@ -83,8 +83,9 @@ def calculate_blasting_parameters(user_inputs):
     explosive_quantity_per_hole = round(total_explosive_quantity / total_holes, 2)
     charge_height = round(explosive_quantity_per_hole / (explosive_density_kg_m3 * (hole_diameter / 1000) ** 2 * 3.14159 / 4), 2)
     stemming_distance_final = round(depth_hole - charge_height, 2)
-    mean_fragmentation_size = round(8 * (burden * spacing * bench_height / explosive_quantity_per_hole) ** 0.8 * explosive_quantity_per_hole ** 0.167,2),
     ppv =  round (9907.03 * ((100.0 / (explosive_quantity_per_hole ** 0.5) ** -2.12),2)
+    mean_fragmentation_size = round(8 * (burden * spacing * bench_height / explosive_quantity_per_hole) ** 0.8 * explosive_quantity_per_hole ** 0.167,2)
+    
 
     parameters_budgeted_pf = {
         "burden": burden,
@@ -213,8 +214,9 @@ def suggest_improvements(user_inputs):
     explosive_per_hole = total_explosive_quantity / total_holes
     charge_height = explosive_per_hole / ((explosive_density * 1000) * (hole_diameter / 1000) ** 2 * 3.14159 / 4)
     stemming_distance = hole_depth - charge_height
-    mean_fragmentation_size = 8 * (average_burden * average_spacing * bench_height / explosive_per_hole) ** 0.8 * explosive_per_hole ** 0.167
     ppv =  round (9907.03 * ((100.0 / ( explosive_per_hole ** 0.5) ** -2.12),2)
+    mean_fragmentation_size = 8 * (average_burden * average_spacing * bench_height / explosive_per_hole) ** 0.8 * explosive_per_hole ** 0.167
+    
 
     range_factor = 0.15
     ranges = {
@@ -813,5 +815,6 @@ def result():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
