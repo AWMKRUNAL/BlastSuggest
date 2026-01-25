@@ -688,7 +688,7 @@ def result():
             user_input = {
                 "bench_height": float(request.form["bench_height"]),
                 #"rock_density": float(request.form["rock_density"]),
-                "rock_density" = rock_density,
+                "rock_density" : rock_density,
                 "explosive_density": float(request.form["explosive_density"]),
                 "length": float(request.form["length"]),
                 "width": float(request.form["width"]),
@@ -845,6 +845,7 @@ def result():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
