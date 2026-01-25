@@ -696,7 +696,8 @@ def result():
                 "explosive_per_hole": "Explosive per Hole (kg)",
                 "booster_quantity": "Booster Quantity (kg)",
                 "total_explosive": "Total Explosive (kg)",
-                "mean_fragmentation_size": "Mean Fragmentation Size (cm)"
+                "mean_fragmentation_size": "Mean Fragmentation Size (cm)",
+                "ppv": "Peak Particle Velocity (mm/s)"
             }
 
             # Calculate blasting parameters and suggest improvements
@@ -815,6 +816,7 @@ def result():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
