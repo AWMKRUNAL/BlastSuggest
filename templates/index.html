@@ -110,31 +110,31 @@
     <div class="container">
         <form action="{{ url_for('result') }}" method="POST" enctype="multipart/form-data">
             <div class="form-group">
-                <label for="bench_height">Bench Height:</label>
+                <label for="bench_height">Bench Height in Meters</label>
                 <input type="number" step="0.01" id="bench_height" name="bench_height" required>
             </div>
             <div class="form-group">
-                <label for="rock_density">Rock Density:</label>
+                <label for="rock_density">Rock Density in g/cm³</label>
                 <input type="number" step="0.01" id="rock_density" name="rock_density" required>
             </div>
             <div class="form-group">
-                <label for="explosive_density">Explosive Density:</label>
+                <label for="explosive_density">Explosive Density in g/cm³</label>
                 <input type="number" step="0.01" id="explosive_density" name="explosive_density" required>
             </div>
             <div class="form-group">
-                <label for="length">Length of Patch:</label>
+                <label for="length">Length of Patch in meters</label>
                 <input type="number" step="0.01" id="length" name="length" required>
             </div>
             <div class="form-group">
-                <label for="width">Width of Patch:</label>
+                <label for="width">Width of Patch in meters</label>
                 <input type="number" step="0.01" id="width" name="width" required>
             </div>
             <div class="form-group">
-                <label for="hole_diameter">Hole Diameter:</label>
+                <label for="hole_diameter">Hole Diameter in mm</label>
                 <input type="number" step="0.01" id="hole_diameter" name="hole_diameter" required>
             </div>
             <div class="form-group">
-                <label for="powder_factor">Powder Factor:</label>
+                <label for="powder_factor">Powder Factor </label>
                 <input type="number" step="0.01" id="powder_factor" name="powder_factor" required>
             </div>
             <div class="form-group">
@@ -161,4 +161,5 @@
     </footer>
 </body>
 </html>
+
 
