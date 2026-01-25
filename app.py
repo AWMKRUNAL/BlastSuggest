@@ -5,62 +5,105 @@ from tabulate import tabulate
 matplotlib.rcParams['animation.embed_limit'] = 2**128
 app = Flask(__name__)
 
+def get_rock_density(rock_type):
+    if rock_type == "Coal":
+        rock_density = (1.37 + 1.41)/2
+    elif rock_type == "Shaly Coal":
+        rock_density = 1.76
+    elif rock_type == "Carb Shale":
+        rock_density = (1.89 + 2.07)/2
+    elif rock_type == "Shale":
+        rock_density = (2.15+2.26)/2
+    elif rock_type == "Sandy Shale":
+        rock_density = (2.34+2.29)/2
+    elif rock_type == "Coarse Grained SST":
+        rock_density = (2.26+2.24)/2
+    elif rock_type == "Med. Grained SST":
+        rock_density = (2.30+2.26)/2
+    elif rock_type == "Fine Grained SST":
+        rock_density = (2.35+2.28)/2
+    elif rock_type == "Calcareous":
+        rock_density = 2.30
+    else:
+        raise ValueError("Invalid Rock Condition Value")
+    return rock_density
+    
 def calculate_blasting_parameters(user_inputs):
     bench_height = user_inputs["bench_height"]
-    rock_density = user_inputs["rock_density"]
+    #rock_density = user_inputs["rock_density"]
+    rock_density = get_rock_density(user_inputs["rock_type"])
     explosive_density = user_inputs["explosive_density"]
     length = user_inputs["length"]
     width = user_inputs["width"]
     hole_diameter = user_inputs["hole_diameter"]
-    bedding_condition = user_inputs["bedding_condition"]
-    rock_condition = user_inputs["rock_condition"]
+    #bedding_condition = user_inputs["bedding_condition"]
+    #rock_type = user_inputs["rock_type"]
+    rock_type = user_inputs["rock_type"]
     powder_factor = user_inputs["powder_factor"]
 
     explosive_density_kg_m3 = explosive_density * 1000
 
-    if bedding_condition == "bedding steeply dipping into cut":
+    '''if bedding_condition == "bedding steeply dipping into cut":
         kd = 1.18
     elif bedding_condition == "bedding steeply dipping into face":
         kd = 0.95
     elif bedding_condition == "other cases of deposition":
-        kd = 1.00
+        kd = 1.00'''
 
-    if rock_condition == "heavily cracked, frequent weak joints, weakly cemented layers":
+    '''if rock_type == "heavily cracked, frequent weak joints, weakly cemented layers":
         ks = 1.30
-    elif rock_condition == "thin well cemented layers with tight joints":
+    elif rock_type == "thin well cemented layers with tight joints":
         ks = 1.10
-    elif rock_condition == "massive intact rock":
+    elif rock_type == "massive intact rock":
         ks = 0.95
     else:
-        raise ValueError("Invalid Rock Condition Value")
-
-    if rock_density == 1.8:
-        B1 = 40 * (hole_diameter / 1000)
-    elif rock_density == 1.9:
-        B1 = 38 * (hole_diameter / 1000)
-    elif rock_density == 2.0:
-        B1 = 36 * (hole_diameter / 1000)
-    elif rock_density == 2.1:
-        B1 = 35 * (hole_diameter / 1000)
-    elif rock_density == 2.2:
-        B1 = 30 * (hole_diameter / 1000)
-    elif rock_density == 2.3:
-        B1 = 28 * (hole_diameter / 1000)
-    elif rock_density == 2.4:
-        B1 = 26 * (hole_diameter / 1000)
-    elif rock_density == 2.5:
-        B1 = 25 * (hole_diameter / 1000)
-    elif rock_density >= 2.6:
-        B1 = 25 * (hole_diameter / 1000)
+        raise ValueError("Invalid Rock Condition Value")'''
+    
+     '''if rock_type == "Coal":
+        rock_density = (1.37 + 1.41)/2
+    elif rock_type == "Shaly Coal":
+        rock_density = 1.76
+    elif rock_type == "Carb Shale":
+        rock_density = (1.89 + 2.07)/2
+    elif rock_type == "Shale":
+        rock_density = (2.15+2.26)/2
+    elif rock_type == "Sandy Shale":
+        rock_density = (2.34+2.29)/2
+    elif rock_type == "Coarse Grained SST":
+        rock_density = (2.26+2.24)/2
+    elif rock_type == "Med. Grained SST":
+        rock_density = (2.30+2.26)/2
+    elif rock_type == "Fine Grained SST":
+        rock_density = (2.35+2.28)/2
+    elif rock_type == "Calcareous":
+        rock_density = 2.30
     else:
-        raise ValueError("Invalid Rock Density Value")
+        raise ValueError("Invalid Rock Condition Value")'''
+
+    if rock_density <= 1.8:
+        B1 = 40 * (hole_diameter / 1000)
+    elif rock_density <= 1.9:
+        B1 = 38 * (hole_diameter / 1000)
+    elif rock_density <= 2.0:
+        B1 = 36 * (hole_diameter / 1000)
+    elif rock_density <= 2.1:
+        B1 = 35 * (hole_diameter / 1000)
+    elif rock_density <= 2.2:
+        B1 = 30 * (hole_diameter / 1000)
+    elif rock_density <= 2.3:
+        B1 = 28 * (hole_diameter / 1000)
+    elif rock_density <= 2.4:
+        B1 = 26 * (hole_diameter / 1000)
+    else:
+        B1 = 25 * (hole_diameter / 1000)
 
     B2 = 0.012 * (2 * (explosive_density / rock_density) + 1.5) * hole_diameter
     B3 = 8 * 10 ** -3 * hole_diameter * (100 / rock_density) ** (1 / 3)
 
     B = (B1 + B2 + B3) / 3
 
-    burden = round(kd * ks * B, 2)
+    #burden = round(kd * ks * B, 2)
+    burden = round(B, 2)
     spacing = round(1.35 * burden, 2)
 
     stemming_distance = 0.7 * burden
@@ -110,13 +153,15 @@ def calculate_blasting_parameters(user_inputs):
 # Define or import the suggest_improvements function as needed
 def suggest_improvements(user_inputs):
     bench_height = user_inputs["bench_height"]
-    rock_density = user_inputs["rock_density"]
+    #rock_density = user_inputs["rock_density"]
+    rock_density = get_rock_density(user_inputs["rock_type"])
     explosive_density = user_inputs["explosive_density"]
     length = user_inputs["length"]
     width = user_inputs["width"]
     hole_diameter = user_inputs["hole_diameter"]
-    bedding_condition = user_inputs["bedding_condition"]
-    rock_condition = user_inputs["rock_condition"]
+    #bedding_condition = user_inputs["bedding_condition"]
+    #rock_type = user_inputs["rock_type"]
+    rock_type = user_inputs["rock_type"]
     powder_factor = user_inputs["powder_factor"]
 
     suggested_burden_sr3 = bench_height / 3
@@ -145,48 +190,66 @@ def suggest_improvements(user_inputs):
     Burden1 = (suggested_burden_sr3 + suggested_burden_sr4) / 2
 
 
-    if bedding_condition == "bedding steeply dipping into cut":
+    '''if bedding_condition == "bedding steeply dipping into cut":
         kd1 = 1.18
     elif bedding_condition == "bedding steeply dipping into face":
         kd1 = 0.95
     elif bedding_condition == "other cases of deposition":
         kd1 = 1.00
 
-    if rock_condition == "heavily cracked, frequent weak joints, weakly cemented layers":
+    if rock_type == "heavily cracked, frequent weak joints, weakly cemented layers":
         ks1 = 1.30
-    elif rock_condition == "thin well cemented layers with tight joints":
+    elif rock_type == "thin well cemented layers with tight joints":
         ks1 = 1.10
-    elif rock_condition == "massive intact rock":
+    elif rock_type == "massive intact rock":
         ks1 = 0.95
     else:
-        raise ValueError("Invalid Rock Condition Value")
+        raise ValueError("Invalid Rock Condition Value")'''
 
-    if rock_density == 1.8:
-        Burden2 = 40 * (hole_diameter / 1000)
-    elif rock_density == 1.9:
-        Burden2 = 38 * (hole_diameter / 1000)
-    elif rock_density == 2.0:
-        Burden2 = 36 * (hole_diameter / 1000)
-    elif rock_density == 2.1:
-        Burden2 = 35 * (hole_diameter / 1000)
-    elif rock_density == 2.2:
-        Burden2 = 30 * (hole_diameter / 1000)
-    elif rock_density == 2.3:
-        Burden2 = 28 * (hole_diameter / 1000)
-    elif rock_density == 2.4:
-        Burden2 = 26 * (hole_diameter / 1000)
-    elif rock_density == 2.5:
-        Burden2 = 25 * (hole_diameter / 1000)
-    elif rock_density >= 2.6:
-        Burden2 = 25 * (hole_diameter / 1000)
+    
+    '''if rock_type == "Coal":
+        rock_density = (1.37 + 1.41)/2
+    elif rock_type == "Shaly Coal":
+        rock_density = 1.76
+    elif rock_type == "Carb Shale":
+        rock_density = (1.89 + 2.07)/2
+    elif rock_type == "Shale":
+        rock_density = (2.15+2.26)/2
+    elif rock_type == "Sandy Shale":
+        rock_density = (2.34+2.29)/2
+    elif rock_type == "Coarse Grained SST":
+        rock_density = (2.26+2.24)/2
+    elif rock_type == "Med. Grained SST":
+        rock_density = (2.30+2.26)/2
+    elif rock_type == "Fine Grained SST":
+        rock_density = (2.35+2.28)/2
+    elif rock_type == "Calcareous":
+        rock_density = 2.30
     else:
-        raise ValueError("Invalid Rock Density Value")
+        raise ValueError("Invalid Rock Condition Value")'''
+
+    if rock_density <= 1.8:
+        Burden2 = 40 * (hole_diameter / 1000)
+    elif rock_density <= 1.9:
+        Burden2 = 38 * (hole_diameter / 1000)
+    elif rock_density <= 2.0:
+        Burden2 = 36 * (hole_diameter / 1000)
+    elif rock_density <= 2.1:
+        Burden2 = 35 * (hole_diameter / 1000)
+    elif rock_density <= 2.2:
+        Burden2 = 30 * (hole_diameter / 1000)
+    elif rock_density <= 2.3:
+        Burden2 = 28 * (hole_diameter / 1000)
+    elif rock_density <= 2.4:
+        Burden2 = 26 * (hole_diameter / 1000)
+    else:
+        Burden2 = 25 * (hole_diameter / 1000)
 
     Burden3 = 0.012 * (2 * (explosive_density / rock_density) + 1.5) * hole_diameter
     Burden4 = 8 * 10 ** -3 * hole_diameter * (100 / rock_density) ** (1 / 3)
     import statistics
     Burden5 = statistics.median([Burden1,Burden2,Burden3,Burden4])
-    average_burden = kd1 * ks1 * Burden5
+    average_burden = Burden5
 
     #if rock_density >= 2.2:
         #spacing2 = 1.2 * average_burden
@@ -263,7 +326,8 @@ def generate_blasting_pattern(user_inputs, spacing, burden, total_holes):
     """
     Optimize the blasting pattern generation by limiting grid size.
     """
-    rock_density = user_inputs["rock_density"]
+    #rock_density = user_inputs["rock_density"]
+    rock_density = get_rock_density(user_inputs["rock_type"])
     width = user_inputs["width"]
     length = user_inputs["length"]
 
@@ -656,16 +720,19 @@ def index():
 def result():
     if request.method == 'POST':
         try:
+            rock_type = request.form['rock_type']
+            rock_density = get_rock_density(rock_type)
             # Convert and collect user inputs
             user_input = {
                 "bench_height": float(request.form["bench_height"]),
-                "rock_density": float(request.form["rock_density"]),
+                #"rock_density": float(request.form["rock_density"]),
+                "rock_density" = rock_density,
                 "explosive_density": float(request.form["explosive_density"]),
                 "length": float(request.form["length"]),
                 "width": float(request.form["width"]),
                 "hole_diameter": float(request.form["hole_diameter"]),
-                "bedding_condition": request.form["bedding_condition"],
-                "rock_condition": request.form["rock_condition"],
+                #"bedding_condition": request.form["bedding_condition"],
+                "rock_type": request.form["rock_type"],
                 "powder_factor": float(request.form["powder_factor"]),
             }
 
@@ -684,8 +751,8 @@ def result():
                 "length": "Length (m)",
                 "width": "Width (m)",
                 "hole_diameter": "Hole Diameter (mm)",
-                "bedding_condition": "Bedding Condition",
-                "rock_condition": "Rock Condition",
+                #"bedding_condition": "Bedding Condition",
+                "rock_type": "Rock Type",
                 "powder_factor": "Powder Factor",
                 "burden": "Burden (m)",
                 "spacing": "Spacing (m)",
@@ -715,7 +782,7 @@ def result():
                 "width": user_input["width"],
                 "hole_diameter": user_input["hole_diameter"],
                 "bedding_condition": user_input["bedding_condition"],
-                "rock_condition": user_input["rock_condition"],
+                "rock_type": user_input["rock_type"],
                 "powder_factor": user_input["powder_factor"]
             }
 
@@ -816,6 +883,7 @@ def result():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
