@@ -743,7 +743,7 @@ def result():
                 "length": user_input["length"],
                 "width": user_input["width"],
                 "hole_diameter": user_input["hole_diameter"],
-                "bedding_condition": user_input["bedding_condition"],
+                #"bedding_condition": user_input["bedding_condition"],
                 "rock_type": user_input["rock_type"],
                 "powder_factor": user_input["powder_factor"]
             }
@@ -845,6 +845,7 @@ def result():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
