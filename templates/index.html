@@ -114,10 +114,6 @@
                 <input type="number" step="0.01" id="bench_height" name="bench_height" required>
             </div>
             <div class="form-group">
-                <label for="rock_density">Rock Density in g/cm³</label>
-                <input type="number" step="0.01" id="rock_density" name="rock_density" required>
-            </div>
-            <div class="form-group">
                 <label for="explosive_density">Explosive Density in g/cm³</label>
                 <input type="number" step="0.01" id="explosive_density" name="explosive_density" required>
             </div>
@@ -137,20 +133,19 @@
                 <label for="powder_factor">Powder Factor </label>
                 <input type="number" step="0.01" id="powder_factor" name="powder_factor" required>
             </div>
+            
             <div class="form-group">
-                <label for="bedding_condition">Bedding Condition:</label>
-                <select id="bedding_condition" name="bedding_condition" required>
-                    <option value="bedding steeply dipping into cut">Bedding steeply dipping into cut</option>
-                    <option value="bedding steeply dipping into face">Bedding steeply dipping into face</option>
-                    <option value="other cases of deposition">Other cases of deposition</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="rock_condition">Rock Condition:</label>
-                <select id="rock_condition" name="rock_condition" required>
-                    <option value="heavily cracked, frequent weak joints, weakly cemented layers">Heavily cracked, frequent weak joints, weakly cemented layers</option>
-                    <option value="thin well cemented layers with tight joints">Thin, well-cemented layers with tight joints</option>
-                    <option value="massive intact rock">Massive intact rock</option>
+                <label for="rock_type">Rock Type:</label>
+                <select id="rock_type" name="rock_type" required>
+                    <option value="Coal">Coal</option>
+                    <option value="Shaly Coal">Shaly Coal</option>
+                    <option value="Carb Shale">Carb Shale</option>
+                    <option value="Shale">Shale</option>
+                    <option value="Sandy Shale">Sandy Shale</option>
+                    <option value="Coarse Grained SST">Coarse Grained SST</option>
+                    <option value="Med. Grained SST">Med. Grained SST</option>
+                    <option value="Fine Grained SST">Fine Grained SST</option>
+                    <option value="Calcareous">Calcareous</option>
                 </select>
             </div>
             <button type="submit" class="generate-button">Generate Report</button>
@@ -161,5 +156,6 @@
     </footer>
 </body>
 </html>
+
 
 
