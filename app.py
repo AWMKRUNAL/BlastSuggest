@@ -544,7 +544,8 @@ def draw_combined_pattern(length, width, spacing, burden, bench_height, pattern_
               hole_details["stemming_distance"], hole_details["hole_depth"], pattern_type)
 
     x_grid, y_grid = np.meshgrid(x_positions, y_positions)
-    z_grid = np.full_like(x_grid, hole_details["hole_depth"], dtype=float)
+    #z_grid = np.full_like(x_grid, hole_details["hole_depth"], dtype=float)
+    z_grid = hole_details["hole_depth"] + 0.6 * np.sin(x_grid / 6) * np.cos(y_grid / 6)
 
     fig.add_trace(
         go.Surface(
@@ -845,6 +846,7 @@ def result():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
