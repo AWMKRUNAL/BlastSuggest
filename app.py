@@ -522,9 +522,11 @@ def create_animation_plotly(positions, delays, spacing, burden):
     )
 
     return fig
-
+'''
 def surface_z (x,y, amplitude = 0.6, freq = 6.0):
     return amplitude * np.sin(x / freq) * np.cos(y / freq)
+
+    '''
 
 def draw_combined_pattern(length, width, spacing, burden, bench_height, pattern_type, hole_details):
     """
@@ -545,9 +547,9 @@ def draw_combined_pattern(length, width, spacing, burden, bench_height, pattern_
               hole_details["stemming_distance"], hole_details["hole_depth"], pattern_type)
 
     x_grid, y_grid = np.meshgrid(x_positions, y_positions)
-    #z_grid = np.full_like(x_grid, hole_details["hole_depth"], dtype=float)
+    z_grid = np.full_like(x_grid, hole_details["hole_depth"], dtype=float)
     #z_grid = hole_details["hole_depth"] + 0.6 * np.sin(x_grid / 6) * np.cos(y_grid / 6)
-    z_grid = hole_details["hole_depth"] + surface_z(x_grid, y_grid) 
+    #z_grid = hole_details["hole_depth"] + surface_z(x_grid, y_grid) 
 
     fig.add_trace(
         go.Surface(
@@ -600,8 +602,8 @@ def create_hole(x, y, charge_height, stemming_distance, depth_hole):
     hole = go.Scatter3d(
         x=[x, x, x, x],
         y=[y, y, y, y],
-        #z=[0, charge_height, stemming_distance, depth_hole],
-        z=[z_surface, z_surface + charge_height, z_surface + stemming_distance, z_surface + depth_hole],
+        z=[0, charge_height, stemming_distance, depth_hole],
+        #z=[z_surface, z_surface + charge_height, z_surface + stemming_distance, z_surface + depth_hole],
         mode="lines+markers",
         line=dict(color=['black', 'grey', 'orange'], width=10),
         marker=dict(color=marker_colors, size=marker_sizes)
@@ -1336,6 +1338,7 @@ def result():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
