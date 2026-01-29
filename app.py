@@ -593,7 +593,7 @@ def add_holes(fig, length, width, spacing, burden, charge_height, stemming_dista
 
 
 def create_hole(x, y, charge_height, stemming_distance, depth_hole):
-    z_surface = surface_z(x,y)
+    #z_surface = surface_z(x,y)
     # Setting marker size to some positive value for the top, and zero for the others
     marker_sizes = [0, 0, 0, 10]
     # Setting marker color as a valid color for the top, and fully transparent for the others
@@ -1338,6 +1338,7 @@ def result():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
