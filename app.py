@@ -676,6 +676,294 @@ def draw_single_diagram(hole_details):
     return base64.b64encode(img.getvalue()).decode('utf-8')
 
 
+import math
+
+def suggest_decking_layout(hole_depth_m: float,
+                           hole_diam_mm: float,
+                           explosive_density_g_cm3: float,
+                           explosive_per_hole_kg: float):
+    """
+    Returns a dictionary with a suggested decking layout based on:
+      - 2/3 bottom explosive column, 1/3 top explosive column
+      - Stemming rules: <=6 m -> 2.2 m; >6 m -> default 3.0 m (range 2.8–3.5 m)
+    Output keys:
+      - stemming_m, stemming_range_m (tuple)
+      - bottom_charge_height_m, top_charge_height_m
+      - inert_deck_m
+      - notes (list of strings with warnings/adjustments)
+    """
+    notes = []
+
+    # 1) Stemming rule
+    if hole_depth_m <= 6.0:
+        stemming_m = 2.2
+        stemming_range = (2.2, 2.2)  # fixed by rule
+        alt_stemming = 2.5  # optional operator override presented as a suggestion
+    else:
+        stemming_m = 3.0  # default within your 2.8–3.5 band
+        stemming_range = (2.8, 3.5)
+        alt_stemming = 2.5  # optional but outside "above 6m" rule; include as operator option
+
+    # 2) Total charge height if undivided
+    rho = explosive_density_g_cm3 * 1000.0  # kg/m^3
+    d_m = hole_diam_mm / 1000.0
+    area_m2 = math.pi * (d_m ** 2) / 4.0
+
+    if rho <= 0 or area_m2 <= 0:
+        return {
+            "stemming_m": stemming_m,
+            "stemming_range_m": stemming_range,
+            "bottom_charge_height_m": 0.0,
+            "top_charge_height_m": 0.0,
+            "inert_deck_m": 0.0,
+            "notes": ["Invalid geometry or density."],
+        }
+
+    total_charge_height_m = explosive_per_hole_kg / (rho * area_m2)
+
+    # 3) Split 2/3 bottom, 1/3 top
+    bottom_h = (2.0 / 3.0) * total_charge_height_m
+    top_h = (1.0 / 3.0) * total_charge_height_m
+
+    # 4) Compute deck gap (inert)
+    inert_deck_m = hole_depth_m - (stemming_m + bottom_h + top_h)
+
+    # 5) Validate and adjust
+    min_top_h = 0.30  # min top column height (m)
+    min_deck_gap = 0.30  # min inert deck (m)
+
+    if inert_deck_m < 0:
+        # Try shortening top charge first (keep bottom bias)
+        deficit = -inert_deck_m
+        if top_h > deficit + min_top_h:
+            top_h -= deficit
+            inert_deck_m = min_deck_gap  # keep a small deck gap
+            notes.append("Top charge shortened to respect hole depth; small deck gap retained.")
+        else:
+            # No feasible two-deck solution; fallback to single column
+            inert_deck_m = 0.0
+            top_h = 0.0
+            bottom_h = min(total_charge_height_m, max(0.0, hole_depth_m - stemming_m))
+            used_mass = rho * area_m2 * bottom_h
+            if used_mass < explosive_per_hole_kg - 1e-3:
+                notes.append("Decking not feasible: fallback to single-column charging within available depth.")
+    else:
+        # If deck gap is too small, try to enforce a minimum by shaving the top column
+        if inert_deck_m < min_deck_gap:
+            shave = (min_deck_gap - inert_deck_m)
+            if top_h > shave + min_top_h:
+                top_h -= shave
+                inert_deck_m = min_deck_gap
+                notes.append("Top charge slightly reduced to maintain minimum deck gap.")
+            else:
+                notes.append("Deck gap below recommended minimum; consider single-column charge or reduce stemming (if within rule).")
+
+    # Bounds: nothing negative
+    bottom_h = max(0.0, bottom_h)
+    top_h = max(0.0, top_h)
+    inert_deck_m = max(0.0, inert_deck_m)
+
+    # Optional operator override note
+    notes.append(f"Optional stemming override: {alt_stemming:.2f} m (operator).")
+
+    return {
+        "stemming_m": round(stemming_m, 2),
+        "stemming_range_m": (round(stemming_range[0], 2), round(stemming_range[1], 2)),
+        "bottom_charge_height_m": round(bottom_h, 2),
+        "top_charge_height_m": round(top_h, 2),
+        "inert_deck_m": round(inert_deck_m, 2),
+        "notes": notes,
+    }
+
+import io
+import base64
+import math
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+
+def draw_decked_single_hole_diagram(
+    hole_diam_mm: float,
+    hole_depth_m: float,
+    explosive_density_g_cm3: float,
+    explosive_per_hole_kg: float,
+    decking: dict,
+    title: str = "Decked Single Blast Hole Diagram"
+) -> str:
+    """
+    Renders a decked single-hole diagram (PNG as base64).
+    decking dict keys expected:
+      - stemming_m
+      - bottom_charge_height_m
+      - inert_deck_m
+      - top_charge_height_m
+      - notes (optional list of strings)
+    """
+
+    # Geometry
+    d_m = hole_diam_mm / 1000.0
+    radius = d_m / 2.0
+    rho_kg_m3 = explosive_density_g_cm3 * 1000.0  # g/cc -> kg/m3
+    area_m2 = math.pi * (radius ** 2)
+
+    # Read decking plan
+    stemming_m   = float(decking.get("stemming_m",       0.0))
+    bottom_h_m   = float(decking.get("bottom_charge_height_m", 0.0))
+    deck_gap_m   = float(decking.get("inert_deck_m",     0.0))
+    top_h_m      = float(decking.get("top_charge_height_m",    0.0))
+    notes        = decking.get("notes", [])
+
+    # Sanity clamps (avoid negative rendering)
+    stemming_m = max(0.0, stemming_m)
+    bottom_h_m = max(0.0, bottom_h_m)
+    deck_gap_m = max(0.0, deck_gap_m)
+    top_h_m    = max(0.0, top_h_m)
+
+    # Check vertical stack fits the hole depth
+    total_stack = stemming_m + top_h_m + deck_gap_m + bottom_h_m
+    if total_stack > hole_depth_m + 1e-6:
+        # If overshoot, try to shave top section proportionally
+        overflow = total_stack - hole_depth_m
+        if top_h_m > overflow:
+            top_h_m -= overflow
+            total_stack = hole_depth_m
+            notes.append("Adjusted top charge to fit hole depth.")
+        else:
+            # As last resort, reduce gap then bottom_h, but avoid negatives
+            overflow -= top_h_m
+            top_h_m = 0.0
+            if deck_gap_m > overflow:
+                deck_gap_m -= overflow
+            else:
+                overflow -= deck_gap_m
+                deck_gap_m = 0.0
+                bottom_h_m = max(0.0, bottom_h_m - overflow)
+            total_stack = min(hole_depth_m, stemming_m + top_h_m + deck_gap_m + bottom_h_m)
+            notes.append("Decking compacted to fit within hole depth.")
+
+    # Prepare plot
+    fig, ax = plt.subplots(figsize=(4.2, 6.2))
+    ax.set_title(title, fontsize=12)
+
+    # Coordinate convention:
+    # y=0 at collar (top); depth increases downwards to +hole_depth_m
+    # We'll draw rectangles along x in a small window around centerline (x≈0.5)
+    x_center = 0.5
+    x_left   = x_center - d_m / 2.0
+    # Slightly widen the drawn column for visibility (diagrammatic, not to scale horizontally)
+    column_width = d_m
+
+    # --- Draw segments from top to bottom ---
+    y_cursor = 0.0
+
+    # 1) Stemming (grey) at top
+    if stemming_m > 0:
+        stem_rect = Rectangle((x_left, y_cursor), column_width, stemming_m,
+                              edgecolor='black', facecolor='lightgrey', label='Stemming')
+        ax.add_patch(stem_rect)
+        y_cursor += stemming_m
+
+    # 2) Top explosive (black) just below stemming (if any)
+    if top_h_m > 0:
+        top_rect = Rectangle((x_left, y_cursor), column_width, top_h_m,
+                             edgecolor='black', facecolor='black', label='Top Charge')
+        ax.add_patch(top_rect)
+        y_cursor += top_h_m
+
+    # 3) Inert deck (white/transparent with border)
+    if deck_gap_m > 0:
+        deck_rect = Rectangle((x_left, y_cursor), column_width, deck_gap_m,
+                              edgecolor='black', facecolor='white', label='Inert Deck')
+        ax.add_patch(deck_rect)
+        y_cursor += deck_gap_m
+
+    # 4) Bottom explosive (black)
+    if bottom_h_m > 0:
+        bottom_rect = Rectangle((x_left, y_cursor), column_width, bottom_h_m,
+                                edgecolor='black', facecolor='black', label='Bottom Charge')
+        ax.add_patch(bottom_rect)
+        y_cursor += bottom_h_m
+
+    # 5) If any residual void (rare if masses are exact)
+    if y_cursor < hole_depth_m:
+        void_rect = Rectangle((x_left, y_cursor), column_width, hole_depth_m - y_cursor,
+                              edgecolor='black', facecolor='none', label='Void')
+        ax.add_patch(void_rect)
+
+    # --- Annotations ---
+    # Depth arrow (right side)
+    ax.annotate(f"Depth: {hole_depth_m:.2f} m",
+                xy=(x_center + column_width/2 + 0.05, hole_depth_m),
+                xytext=(x_center + column_width/2 + 0.25, hole_depth_m),
+                arrowprops=dict(facecolor='black', width=1, shrink=0.05),
+                va='center', fontsize=9)
+
+    # Stemming label
+    if stemming_m > 0:
+        ax.annotate(f"Stemming: {stemming_m:.2f} m",
+                    xy=(x_left + column_width/2, stemming_m/2),
+                    xytext=(x_center + column_width/2 + 0.25, stemming_m/2),
+                    arrowprops=dict(facecolor='darkgrey', width=1, shrink=0.05),
+                    va='center', fontsize=9, color='dimgray')
+
+    # Top charge label
+    if top_h_m > 0:
+        y_mid = stemming_m + top_h_m/2
+        ax.annotate(f"Top charge: {top_h_m:.2f} m",
+                    xy=(x_left + column_width/2, y_mid),
+                    xytext=(x_center + column_width/2 + 0.25, y_mid),
+                    arrowprops=dict(facecolor='black', width=1, shrink=0.05),
+                    va='center', fontsize=9, color='black')
+
+    # Deck label
+    if deck_gap_m > 0:
+        y_mid = stemming_m + top_h_m + deck_gap_m/2
+        ax.annotate(f"Deck: {deck_gap_m:.2f} m",
+                    xy=(x_left + column_width/2, y_mid),
+                    xytext=(x_center + column_width/2 + 0.25, y_mid),
+                    arrowprops=dict(facecolor='orange', width=1, shrink=0.05),
+                    va='center', fontsize=9, color='orange')
+
+    # Bottom charge label
+    if bottom_h_m > 0:
+        y_mid = stemming_m + top_h_m + deck_gap_m + bottom_h_m/2
+        ax.annotate(f"Bottom charge: {bottom_h_m:.2f} m",
+                    xy=(x_left + column_width/2, y_mid),
+                    xytext=(x_center + column_width/2 + 0.25, y_mid),
+                    arrowprops=dict(facecolor='black', width=1, shrink=0.05),
+                    va='center', fontsize=9, color='black')
+
+    # Axes formatting (depth downwards)
+    ax.set_xlim(0.2, 1.2)
+    ax.set_ylim(hole_depth_m + 0.5, -0.5)  # invert so depth goes downward
+    ax.set_xlabel('Horizontal position (schematic)')
+    ax.set_ylabel('Depth (m)')
+
+    # Custom legend (avoid duplicates)
+    handles, labels = [], []
+    for patch in ax.patches:
+        lbl = patch.get_label()
+        if lbl not in labels and lbl != "_nolegend_":
+            handles.append(patch)
+            labels.append(lbl)
+    ax.legend(handles, labels, loc='upper left', fontsize=8, frameon=True)
+
+    # Notes
+    y_note = hole_depth_m + 0.2
+    for n in notes:
+        ax.text(0.22, y_note, f"• {n}", fontsize=8, color='dimgray')
+        y_note -= 0.25
+
+    # Export to base64 PNG
+    buf = io.BytesIO()
+    plt.tight_layout()
+    plt.savefig(buf, format='png', dpi=160)
+    buf.seek(0)
+    img_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    plt.close(fig)
+    return img_b64
+
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -684,6 +972,204 @@ def index():
 
 
 @app.route('/result', methods=['POST'])
+def result():
+    if request.method == 'POST':
+        try:
+            rock_type = request.form['rock_type']
+            rock_density = get_rock_density(rock_type)
+            # Convert and collect user inputs
+            user_input = {
+                "bench_height": float(request.form["bench_height"]),
+                # "rock_density": float(request.form["rock_density"]),
+                "rock_density": rock_density,
+                "explosive_density": float(request.form["explosive_density"]),
+                "length": float(request.form["length"]),
+                "width": float(request.form["width"]),
+                "hole_diameter": float(request.form["hole_diameter"]),
+                # "bedding_condition": request.form["bedding_condition"],
+                "rock_type": request.form["rock_type"],
+                "powder_factor": float(request.form["powder_factor"]),
+            }
+
+            # Input validation
+            if user_input["length"] > 1000 or user_input["width"] > 1000:
+                return "<h1>Error: Length and Width values are too large. Please reduce the dimensions.</h1>"
+
+            if user_input["hole_diameter"] < 1 or user_input["hole_diameter"] > 1000:
+                return "<h1>Error: Invalid Hole Diameter. Please provide a valid range (1-1000 mm).</h1>"
+
+            # Parameter names mapping
+            parameter_names = {
+                "bench_height": "Bench Height (m)",
+                "rock_density": "Rock Density (g/cm³)",
+                "explosive_density": "Explosive Density (g/cm³)",
+                "length": "Length (m)",
+                "width": "Width (m)",
+                "hole_diameter": "Hole Diameter (mm)",
+                # "bedding_condition": "Bedding Condition",
+                "rock_type": "Rock Type",
+                "powder_factor": "Powder Factor",
+                "burden": "Burden (m)",
+                "spacing": "Spacing (m)",
+                "charge_height": "Charge Height (m)",
+                "stemming_distance": "Stemming Distance (m)",
+                "hole_depth": "Hole Depth (m)",
+                "total_holes": "Total Holes",
+                "explosive_per_hole": "Explosive per Hole (kg)",
+                "booster_quantity": "Booster Quantity (kg)",
+                "total_explosive": "Total Explosive (kg)",
+                "mean_fragmentation_size": "Mean Fragmentation Size (cm)",
+                "ppv": "Peak Particle Velocity (mm/s)"
+            }
+
+            # Calculate blasting parameters and suggest improvements
+            params_budgeted = calculate_blasting_parameters(user_input)
+            # Decking Suggestions
+            deck_suggestion = suggest_decking_layout(
+                hole_depth_m=params_budgeted["hole_depth"],
+                hole_diam_mm=user_input["hole_diameter"],
+                explosive_density_g_cm3=user_input["explosive_density"],
+                explosive_per_hole_kg=params_budgeted["explosive_per_hole"]
+            )
+
+            suggestions = suggest_improvements(user_input)
+            suggestions["decking"] = deck_suggestion
+            parameters = list(params_budgeted.keys())
+
+            # Prepare data for the table
+            table_data = []
+            user_input_parameters = {
+                "bench_height": user_input["bench_height"],
+                "rock_density": user_input["rock_density"],
+                "explosive_density": user_input["explosive_density"],
+                "length": user_input["length"],
+                "width": user_input["width"],
+                "hole_diameter": user_input["hole_diameter"],
+                # "bedding_condition": user_input["bedding_condition"],
+                "rock_type": user_input["rock_type"],
+                "powder_factor": user_input["powder_factor"]
+            }
+
+
+
+            for param, value in user_input_parameters.items():
+                table_data.append([parameter_names[param], value, value])
+
+            # Update the table for permissible ranges
+            for param in parameters:
+                budgeted_value = params_budgeted.get(param, "N/A")
+
+                range_key = "total_explosives" if param == "total_explosive" else param
+
+                if "ranges" in suggestions and range_key in suggestions["ranges"]:
+                    if isinstance(suggestions["ranges"][range_key], (tuple, list)) and len(
+                            suggestions["ranges"][range_key]) == 2:
+                        range_min, range_max = suggestions["ranges"][range_key]
+                        table_data.append(
+                            [parameter_names[param], budgeted_value, f"{range_min:.2f} - {range_max:.2f}"]
+                        )
+                    else:
+                        table_data.append([parameter_names[param], budgeted_value, budgeted_value])
+                else:
+                    table_data.append([parameter_names[param], budgeted_value, budgeted_value])
+            
+            if "decking" in suggestions:
+                d = suggestions["decking"]
+                table_data.append(["—", "—", "—"])  # spacer
+                table_data.append(["Decking: Stemming (m)", d["stemming_m"],
+                                   f"{d['stemming_range_m'][0]:.2f} – {d['stemming_range_m'][1]:.2f}"])
+                table_data.append(["Decking: Bottom charge height (m)", d["bottom_charge_height_m"], "—"])
+                table_data.append(["Decking: Inert deck gap (m)", d["inert_deck_m"], "≥ 0.30 (recommended)"])
+                table_data.append(["Decking: Top charge height (m)", d["top_charge_height_m"], "≥ 0.30 (recommended)"])
+
+                if d["notes"]:
+                    for n in d["notes"]:
+                        table_data.append(["Note", n, ""])
+
+            # Generate the HTML table
+            headers = ["Parameter", "Value", "Permissible Range"]
+            table_html = tabulate(table_data, headers, tablefmt="html")
+
+            # Drawing combined pattern and single diagram
+            combined_pattern_img_html = draw_combined_pattern(
+                length=user_input["length"],
+                width=user_input["width"],
+                spacing=params_budgeted["spacing"],
+                burden=params_budgeted["burden"],
+                bench_height=params_budgeted["bench_height"],
+                pattern_type='staggered' if user_input["rock_density"] >= 2.2 else 'square',
+                hole_details=params_budgeted
+            )
+
+            hole_details = {
+                "diameter_mm": user_input["hole_diameter"],
+                "depth_m": params_budgeted["hole_depth"],
+                "explosive_density_g_cm3": user_input["explosive_density"],
+                "explosive_quantity_kg": params_budgeted["explosive_per_hole"],
+            }
+            single_diagram_img = draw_single_diagram(hole_details)
+
+            decked_diagram_img = draw_decked_single_hole_diagram(
+                hole_diam_mm=user_input["hole_diameter"],
+                hole_depth_m=params_budgeted["hole_depth"],
+                explosive_density_g_cm3=user_input["explosive_density"],
+                explosive_per_hole_kg=params_budgeted["explosive_per_hole"],
+                decking=deck_suggestion,
+                title="Decked Single Blast Hole Diagram"
+            )
+            
+            # Determine pattern type based on rock density
+            pattern_type = 'square' if user_input["rock_density"] < 2.2 else 'staggered'
+
+            # Generate positions based on calculated parameters
+            positions, num_rows = generate_blasting_pattern(user_input, params_budgeted["spacing"],
+                                                            params_budgeted["burden"],
+                                                            params_budgeted["total_holes"])
+
+            # Assume image_path is the path to your image file
+            image_path = 'path/to/uploaded/image.jpg'
+
+            # Read the image file into a byte stream for flexibility
+            img_byte_stream = None
+            if os.path.exists(image_path):
+                with open(image_path, 'rb') as f:
+                    img_byte_stream = f.read()
+
+            # Plot the blasting pattern
+            fig, ax, scatter, delays = plot_blasting_pattern(
+                positions,
+                params_budgeted["burden"],
+                params_budgeted["spacing"],
+                num_rows,
+                connection_type='diagonal',
+                row_delay=17,
+                diagonal_delay=42,
+                pattern_type= pattern_type,  # Replace with actual pattern type
+                image_path=image_path,  # Provide the image path
+                img_byte_stream=img_byte_stream  # Provide the image byte stream
+            )
+
+            # Create animation
+            # Generate animation using Plotly
+            animation_html = create_animation_plotly(
+                positions=positions,
+                delays=delays,
+                spacing=params_budgeted["spacing"],
+                burden=params_budgeted["burden"]
+            ).to_html(full_html=False)
+            
+
+
+            return render_template('result.html', table_html=table_html,
+                                   combined_pattern_img_html=combined_pattern_img_html,
+                                   single_diagram_img=single_diagram_img, decked_diagram_img=decked_diagram_img,
+                                   animation_html=animation_html)
+
+        except (ValueError, KeyError) as e:
+            return f"<h1>Error: {e}</h1>"
+        except Exception as e:
+            return f"<h1>Unexpected Error: {e}</h1>"
+'''
 def result():
     if request.method == 'POST':
         try:
@@ -846,10 +1332,11 @@ def result():
             return f"<h1>Error: {e}</h1>"
         except Exception as e:
             return f"<h1>Unexpected Error: {e}</h1>"
-
+'''
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
